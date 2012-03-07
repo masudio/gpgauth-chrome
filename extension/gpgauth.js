@@ -3,18 +3,18 @@ GPGAUTH_VERSION = "v1.3.0";
 CLIENT_VERSION = "v1.0.411";
 
 // HTTP Headers
-SERVER_GPGAUTH_VERSION = 'X-GPGAuth-Version'        /* HTTP Header that reports the gpgAuth server implementation version
+SERVER_GPGAUTH_VERSION = 'x-gpgauth-version'        /* HTTP Header that reports the gpgAuth server implementation version
                                                        This header is matched against the extension & plugin version for compatability,
                                                        and also serves to advertize server gpgAuth support */
-RESOURCE_AUTH_REQUESTED = 'X-GPGAuth-Requested'      /* Used to indicate that the resource has requested gpgAuth authentication */
-RESOURCE_AUTH_REQUIRED = 'X-GPGAuth-Required'       /* Used to indicate that the requested resource requires gpgAuth authentication */
-SERVICE_LOGIN_URL = 'X-GPGAuth-Login-URL'           /* URL to submit authentication events */
-SERVICE_SIGNUP_URL = 'X-GPGAuth-Signup-URL'         /* URL to sign-up for account */
-SERVICE_MIGRATION_URL = 'X-GPGAuth-Migration-URL'   /* URL to migrate legacy UN/PW auth to gpgAuth - or to setup gpgAuth for an existing account */
-LOGIN_METHOD = 'X-GPGAuth-Method'                   /* POST?, blah, blah */
-SERVER_VERIFICATION_URL = 'X-GPGAuth-Verify-URL'    /* URL to perform server verification (must be relative?) */
-USER_AUTHENTICATED = 'X-GPGAuth-Authenticated'        /* Header to indicate if the user is currently authenticated */
-LOGOUT_URL = 'X-GPGAuth-Logout-URL'                    /* URL to perform logout of the user */
+RESOURCE_AUTH_REQUESTED = 'x-gpgauth-requested'      /* Used to indicate that the resource has requested gpgAuth authentication */
+RESOURCE_AUTH_REQUIRED = 'x-gpgauth-required'       /* Used to indicate that the requested resource requires gpgAuth authentication */
+SERVICE_LOGIN_URL = 'x-gpgauth-login-url'           /* URL to submit authentication events */
+SERVICE_SIGNUP_URL = 'x-gpgauth-signup-url'         /* URL to sign-up for account */
+SERVICE_MIGRATION_URL = 'x-gpgauth-migration-url'   /* URL to migrate legacy UN/PW auth to gpgAuth - or to setup gpgAuth for an existing account */
+LOGIN_METHOD = 'x-gpgauth-method'                   /* POST?, blah, blah */
+SERVER_VERIFICATION_URL = 'x-gpgauth-verify-url'    /* URL to perform server verification (must be relative?) */
+USER_AUTHENTICATED = 'x-gpgauth-authenticated'        /* Header to indicate if the user is currently authenticated */
+LOGOUT_URL = 'x-gpgauth-logout-url'                    /* URL to perform logout of the user */
 /* End Constants */
 
 
@@ -92,7 +92,7 @@ var gpgAuth = {
             console.log(response);
         }
         if (response.result['server_validated'] == true || response.result['valid'] == 'override') {
-            if (this.gpgauth_headers['X-GPGAuth-Requested'] == 'true' || response.result['valid'] == 'override') {
+            if (this.gpgauth_headers['x-gpgauth-requested'] == 'true' || response.result['valid'] == 'override') {
                 chrome.extension.sendRequest({msg: 'doUserLogin', params: {'domain': document.domain, 
                         'service_login_url': this.gpgauth_headers[SERVICE_LOGIN_URL] }},
                         function(response) { gpgAuth.login(response) });
@@ -112,7 +112,7 @@ var gpgAuth = {
             http.send(params);
             if(http.readyState == 4 && http.status == 200) {
                 this.gpgauth_headers = gpgAuth.getHeaders(http.getAllResponseHeaders());
-                chrome.extension.sendRequest({msg: this.gpgauth_headers['X-GPGAuth-Progress'],
+                chrome.extension.sendRequest({msg: this.gpgauth_headers['x-gpgauth-Progress'],
                     params: {'domain':document.domain,
                             'service_login_url': this.gpgauth_headers[SERVICE_LOGIN_URL],
                             'headers': this.gpgauth_headers,
@@ -128,7 +128,7 @@ var gpgAuth = {
     
     handleRefer: function(response, headers, domain) {
         console.log("asked to proceed to page:", response);
-        next = headers['X-GPGAuth-Refer'];
+        next = headers['x-gpgauth-refer'];
         if (next && next[0] == "/") {
             window.location = next;
         }
@@ -148,15 +148,17 @@ var gpgAuth = {
         while (is_match != null) {
             is_match = re.exec(response_headers)
             if (is_match) {
-                if (is_match[1].substr(-3) == "URL") {
-                    if (is_match[2][0] != '/'){
-                        /* the verification url points to another server was found
-                            we are not going to continue */
-                        gpgauth_headers[is_match[1]] = 'invalid';
-                        break;
-                    } else {
-                        is_match[2] = document.location.protocol + "//" + document.location.host + is_match[2];
-                    }
+		is_match[1] = is_match[1].toLowerCase();
+                if (is_match[1].substr(-3) == "url") {
+//                    if (is_match[2][0] != '/'){
+//                        /* the verification url points to another server was found
+//                            we are not going to continue */
+//                        gpgauth_headers[is_match[1]] = 'invalid';
+//                        break;
+//                    } else {
+		    
+                    is_match[2] = document.location.protocol + "//" + document.location.host + is_match[2];
+//                    }
                 }
                 gpgauth_headers[is_match[1]] = is_match[2];
                 gpgauth_headers.length += 1;
